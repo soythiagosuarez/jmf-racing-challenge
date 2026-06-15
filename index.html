@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<title>JMF Racing Challenge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#131313;font-family:'Rajdhani',sans-serif;user-select:none;cursor:default}
+
+/* ── SCREENS ── */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.screen.active{display:flex}
+.screen-footer{position:absolute;bottom:8px;width:100%;text-align:center;font-family:'Rajdhani',sans-serif;font-size:clamp(10px,1.1vw,13px);color:#444;letter-spacing:.08em;z-index:10}
+
+/* ── STAFF BUTTON ── */
+#btn-staff{position:fixed;top:8px;right:10px;z-index:9999;background:none;border:none;color:#2e2e2e;font-family:'Rajdhani',sans-serif;font-size:10px;cursor:pointer;letter-spacing:.12em;padding:6px 10px;text-transform:uppercase}
+#btn-staff:hover{color:#666}
+
+/* ── POPUP OVERLAY ── */
+.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:5000;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s ease-out}
+.popup-overlay.hidden{display:none}
+.popup-box{position:relative;background:#1C1C1C;border-radius:12px;padding:clamp(22px,3vh,36px) clamp(22px,3vw,40px);max-width:580px;width:90%;max-height:85vh;overflow-y:auto}
+.popup-close{position:absolute;top:12px;right:14px;background:none;border:none;color:#888;font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;cursor:pointer;line-height:1;padding:2px 6px}
+.popup-close:hover{color:#ccc}
+.popup-title{font-family:'Press Start 2P',monospace;font-size:clamp(9px,1.1vw,13px);line-height:1.7;margin-bottom:8px}
+.popup-subtitle{font-family:'Rajdhani',sans-serif;font-size:clamp(13px,1.5vw,17px);color:#888;margin-bottom:18px}
+/* border variants */
+.pb-gold{border:2px solid #FFD700}
+.pb-white{border:2px solid #fff}
+.pb-gray{border:2px solid #888}
+.pb-red{border:2px solid #E8002D}
+/* input */
+.popup-input{width:100%;background:#131313;border:2px solid #E8002D;border-radius:6px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:clamp(15px,1.7vw,19px);padding:10px 14px;outline:none;margin-top:4px;margin-bottom:6px}
+.popup-input:focus{border-color:#ff3355}
+.input-error{color:#E8002D;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;min-height:20px;margin-bottom:10px}
+.popup-btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}
+.btn-primary{font-family:'Press Start 2P',monospace;font-size:clamp(9px,1.1vw,13px);color:#fff;background:#E8002D;border:none;padding:clamp(10px,1.3vh,14px) clamp(18px,2.5vw,28px);border-radius:6px;cursor:pointer;box-shadow:0 4px 0 #900020;transition:transform .1s;letter-spacing:.04em}
+.btn-primary:hover{background:#ff1a40;transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(2px)}
+.btn-secondary{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:clamp(13px,1.5vw,16px);color:#888;background:#252525;border:none;padding:clamp(10px,1.3vh,14px) clamp(18px,2.5vw,28px);border-radius:6px;cursor:pointer}
+.btn-secondary:hover{background:#333;color:#ccc}
+
+/* ── STAFF POPUP ── */
+#popup-staff .popup-box{max-width:360px;text-align:center}
+.staff-title{font-family:'Press Start 2P',monospace;font-size:clamp(8px,1vw,11px);color:#E8002D;margin-bottom:14px}
+.staff-text{font-family:'Rajdhani',sans-serif;font-size:clamp(15px,1.7vw,19px);font-weight:600;color:#fff;margin-bottom:22px;line-height:1.5}
+.staff-btn-row{display:flex;gap:12px;justify-content:center}
+
+/* ── PRIZES POPUP ── */
+.prizes-list{list-style:none;padding:0;margin-top:10px}
+.prizes-list li{font-family:'Rajdhani',sans-serif;font-size:clamp(13px,1.6vw,18px);font-weight:600;color:#ccc;padding:11px 0;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;gap:10px;line-height:1.4}
+.prizes-list li:last-child{border-bottom:none;color:#777}
+.pli-pts{font-family:'Press Start 2P',monospace;font-size:.55em;color:#FFD700;min-width:88px;flex-shrink:0}
+.prizes-list li:last-child .pli-pts{color:#555}
+
+/* ── RANKING POPUP ── */
+#popup-ranking .popup-box{max-width:660px}
+.ranking-loading,.ranking-empty{font-family:'Rajdhani',sans-serif;font-size:clamp(14px,1.5vw,17px);color:#888;text-align:center;padding:24px 0}
+.ranking-table{width:100%;border-collapse:collapse;margin-top:12px}
+.ranking-table th{font-family:'Press Start 2P',monospace;font-size:clamp(6px,.7vw,8px);color:#555;padding:8px 8px;text-align:left;border-bottom:1px solid #2a2a2a;letter-spacing:.08em}
+.ranking-table td{font-family:'Rajdhani',sans-serif;font-size:clamp(13px,1.5vw,17px);font-weight:600;color:#aaa;padding:8px 8px;border-bottom:1px solid #1e1e1e}
+.ranking-table tr:last-child td{border-bottom:none}
+.ranking-row-current td{color:#FFD700}
+
+/* ── HOWTO POPUP ── */
+.howto-list{list-style:none;padding:0;margin-top:10px}
+.howto-list li{font-family:'Rajdhani',sans-serif;font-size:clamp(13px,1.5vw,17px);font-weight:600;color:#ccc;padding:9px 0;border-bottom:1px solid #222;display:flex;align-items:flex-start;gap:10px;line-height:1.4}
+.howto-list li:last-child{border-bottom:none}
+.hi{min-width:24px;text-align:center}
+.hl{color:#888;font-weight:700}
+
+/* ════ WELCOME ════ */
+#screen-welcome{background:#131313}
+.welcome-content{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:clamp(14px,2.4vh,30px);padding:20px 40px}
+.welcome-logo{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:clamp(12px,1.4vw,18px);color:#888;letter-spacing:.25em}
+.welcome-logo span{color:#E8002D}
+.game-title{font-family:'Press Start 2P',monospace;font-size:clamp(22px,4.2vw,56px);color:#FFD700;text-align:center;line-height:1.45;text-shadow:0 0 12px rgba(255,215,0,.8),0 0 35px rgba(255,215,0,.4),3px 3px 0 #E8002D,6px 6px 0 rgba(232,0,45,.3);animation:titleGlow 2s ease-in-out infinite alternate}
+.game-subtitle{font-size:clamp(15px,2vw,26px);font-weight:600;color:#fff;letter-spacing:.08em}
+.btn-start{font-family:'Press Start 2P',monospace;font-size:clamp(13px,1.9vw,22px);color:#fff;background:#E8002D;border:none;padding:clamp(12px,1.7vh,18px) clamp(28px,5vw,66px);border-radius:6px;cursor:pointer;box-shadow:0 6px 0 #900020,0 0 30px rgba(232,0,45,.4);transition:transform .1s,box-shadow .1s;letter-spacing:.05em;animation:pulseGlow 1.5s ease-in-out infinite}
+.btn-start:hover{background:#ff1a40;box-shadow:0 6px 0 #900020,0 0 55px rgba(232,0,45,.7);transform:translateY(-2px)}
+.btn-start:active{transform:translateY(4px);box-shadow:0 2px 0 #900020}
+/* floating buttons */
+.floating-btns{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);display:flex;gap:24px;z-index:10}
+.float-btn{width:64px;height:64px;border-radius:50%;background:#131313;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:26px;position:relative;transition:transform .15s,box-shadow .15s;border:2px solid transparent}
+.float-btn:hover{transform:translateY(-5px)}
+.float-btn::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#1C1C1C;color:#fff;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;padding:4px 10px;border-radius:4px;border:1px solid #333;opacity:0;pointer-events:none;transition:opacity .2s}
+.float-btn:hover::after{opacity:1}
+#fb-prizes{border-color:#FFD700}#fb-prizes:hover{box-shadow:0 0 22px rgba(255,215,0,.4)}
+#fb-ranking{border-color:#fff}
+#fb-howto{border-color:#888}
+
+/* ════ JUEGO ════ */
+#screen-game{background:#131313;flex-direction:column}
+#hud{position:absolute;top:0;left:0;right:0;height:clamp(54px,8vh,78px);background:rgba(28,28,28,.94);border-bottom:2px solid #E8002D;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(14px,2.5vw,36px);z-index:100;box-shadow:0 2px 20px rgba(232,0,45,.3)}
+.hud-block{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:90px}
+.hud-label{font-family:'Press Start 2P',monospace;font-size:clamp(6px,.75vw,9px);color:#888;letter-spacing:.15em}
+.hud-value{font-family:'Press Start 2P',monospace;font-size:clamp(15px,2.3vw,28px);color:#fff;transition:transform .12s}
+.score-value{color:#FFD700}
+.hud-lives{min-width:130px}
+.lives-icons{display:flex;gap:5px}
+.life-icon{font-size:clamp(17px,2.3vw,28px);transition:opacity .3s,transform .3s;filter:drop-shadow(0 0 4px rgba(232,0,45,.8))}
+.life-icon.lost{opacity:.14;transform:scale(.7);filter:none}
+#game-world{position:absolute;top:clamp(54px,8vh,78px);bottom:28px;left:0;right:0;overflow:hidden}
+#game-canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;display:block}
+#sky{position:absolute;top:0;left:0;right:0;height:42%;background:linear-gradient(180deg,#020510 0%,#0a0820 25%,#1a0530 55%,#3d0a1a 80%,#6b0f1a 100%);z-index:1}
+.star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:twinkle 2s ease-in-out infinite alternate}
+#horizon-line{position:absolute;top:42%;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#E8002D 20%,#FFD700 50%,#E8002D 80%,transparent);box-shadow:0 0 14px rgba(255,215,0,.6),0 0 28px rgba(232,0,45,.4);z-index:5}
+#road-container{position:absolute;top:42%;bottom:0;left:0;right:0;overflow:hidden;background:linear-gradient(180deg,#1a0a00 0%,#111 40%,#131313 100%);z-index:2}
+#road{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%;height:100%;background:linear-gradient(180deg,#1a1a1a 0%,#222 100%);clip-path:polygon(28% 0%,72% 0%,100% 100%,0% 100%)}
+.road-stripe{position:absolute;left:0;right:0;height:12.5%}
+.road-stripe:nth-child(odd){background:#1e1e1e}.road-stripe:nth-child(even){background:#252525}
+.road-stripe:nth-child(1){top:0%}.road-stripe:nth-child(2){top:12.5%}.road-stripe:nth-child(3){top:25%}.road-stripe:nth-child(4){top:37.5%}
+.road-stripe:nth-child(5){top:50%}.road-stripe:nth-child(6){top:62.5%}.road-stripe:nth-child(7){top:75%}.road-stripe:nth-child(8){top:87.5%}
+#road-center-line{position:absolute;left:50%;top:0;bottom:0;width:3px;transform:translateX(-50%);background:repeating-linear-gradient(to bottom,#FFD700 0,#FFD700 26px,transparent 26px,transparent 56px);animation:roadScroll .5s linear infinite;opacity:.6}
+#road-left-edge{position:absolute;left:0;top:0;bottom:0;width:4px;background:#E8002D;box-shadow:0 0 8px rgba(232,0,45,.5)}
+#road-right-edge{position:absolute;right:0;top:0;bottom:0;width:4px;background:#E8002D;box-shadow:0 0 8px rgba(232,0,45,.5)}
+#palms-left,#palms-right{position:absolute;top:25%;bottom:0;width:16%;z-index:6;pointer-events:none;overflow:hidden}
+#palms-left{left:0}#palms-right{right:0}
+.palm{position:absolute;bottom:-10px;width:clamp(36px,4.5vw,64px);transform-origin:bottom center}
+.palm::before{content:'';display:block;width:clamp(5px,.55vw,8px);height:clamp(70px,11vh,130px);background:linear-gradient(180deg,#5a3510,#3d2208);margin:0 auto;border-radius:3px 3px 0 0}
+.palm::after{content:'';display:block;position:absolute;top:0;left:50%;transform:translate(-50%,-68%);width:clamp(40px,5.5vw,74px);height:clamp(28px,3.8vh,46px);background:radial-gradient(ellipse at 30% 80%,#1a5c1a 0%,transparent 60%),radial-gradient(ellipse at 70% 80%,#1a5c1a 0%,transparent 60%),radial-gradient(ellipse at 15% 50%,#14471e 0%,transparent 55%),radial-gradient(ellipse at 85% 50%,#14471e 0%,transparent 55%),radial-gradient(ellipse at 50% 30%,#0d3314 0%,transparent 70%)}
+.palm-a{left:2%;animation:palmBob 3.0s ease-in-out infinite}
+.palm-b{left:7%;animation:palmBob 3.8s ease-in-out infinite .6s;transform:scale(.72)}
+.palm-c{left:-1%;animation:palmBob 4.2s ease-in-out infinite 1.1s;transform:scale(.88)}
+.palm-ra{right:2%;transform:scaleX(-1);animation:palmBob 3.0s ease-in-out infinite .4s}
+.palm-rb{right:7%;transform:scaleX(-1) scale(.72);animation:palmBob 3.8s ease-in-out infinite 1.0s}
+.palm-rc{right:-1%;transform:scaleX(-1) scale(.88);animation:palmBob 4.2s ease-in-out infinite 1.5s}
+#speedlines-game-left,#speedlines-game-right{position:absolute;top:42%;bottom:0;width:13%;z-index:7;pointer-events:none}
+#speedlines-game-left{left:0;background:repeating-linear-gradient(180deg,transparent 0,transparent 8px,rgba(255,215,0,.06) 8px,rgba(255,215,0,.06) 10px);animation:speedV .2s linear infinite}
+#speedlines-game-right{right:0;background:repeating-linear-gradient(180deg,transparent 0,transparent 8px,rgba(255,215,0,.06) 8px,rgba(255,215,0,.06) 10px);animation:speedV .2s linear infinite}
+#play-area{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:54%;height:58%;z-index:20}
+#player-car{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);width:clamp(58px,7.5vw,96px);transition:left .12s cubic-bezier(.25,.46,.45,.94);z-index:30;opacity:0!important}
+.car-body{position:relative;width:100%;aspect-ratio:1/1.45}
+.car-body::before{content:'';position:absolute;bottom:28%;left:8%;right:8%;top:15%;background:linear-gradient(135deg,#ff1a3a,#E8002D 40%,#b80024);border-radius:40% 40% 10% 10%;box-shadow:inset 0 4px 8px rgba(255,255,255,.2),inset 0 -4px 8px rgba(0,0,0,.4),0 0 16px rgba(232,0,45,.4)}
+.car-body::after{content:'';position:absolute;bottom:18%;left:0;right:0;height:22%;background:linear-gradient(135deg,#cc001f,#a00018);border-radius:6px 6px 0 0}
+.car-roof{position:absolute;top:18%;left:22%;right:22%;height:28%;background:linear-gradient(180deg,#111,#1a1a1a);border-radius:50% 50% 20% 20%}
+.car-windshield{position:absolute;top:38%;left:24%;right:24%;height:16%;background:linear-gradient(180deg,rgba(100,180,255,.6),rgba(50,100,200,.3));border-radius:4px 4px 0 0;border:1px solid rgba(150,200,255,.3)}
+.car-hood{position:absolute;top:52%;left:15%;right:15%;height:12%;background:linear-gradient(180deg,#E8002D,#b80024);border-radius:0 0 4px 4px}
+.car-spoiler{position:absolute;top:12%;left:5%;right:5%;height:5%;background:linear-gradient(180deg,#FFD700,#cc9900);border-radius:2px;box-shadow:0 0 8px rgba(255,215,0,.5)}
+.car-stripe{position:absolute;top:54%;left:15%;right:15%;height:3px;background:#FFD700;border-radius:2px;box-shadow:0 0 6px rgba(255,215,0,.6)}
+.car-wl,.car-wr{position:absolute;bottom:8%;width:18%;height:26%;background:radial-gradient(circle,#444 30%,#222 60%,#111 100%);border-radius:50%;border:2px solid #555;box-shadow:0 2px 6px rgba(0,0,0,.8)}
+.car-wl{left:-4%}.car-wr{right:-4%}
+.car-el,.car-er{position:absolute;bottom:0;width:8%;height:10%;background:#333;border-radius:0 0 2px 2px}
+.car-el{left:22%}.car-er{right:22%}
+.car-tl,.car-tr{position:absolute;bottom:28%;width:10%;height:8%;background:#ff2200;border-radius:2px;box-shadow:0 0 8px rgba(255,34,0,.8),0 0 16px rgba(255,34,0,.4);animation:taillightFlicker .12s ease-in-out infinite alternate}
+.car-tl{left:6%}.car-tr{right:6%}
+.obstacle{position:absolute;z-index:25;opacity:0!important;pointer-events:none!important}
+.obstacle-cone{width:clamp(26px,3.2vw,46px);height:clamp(38px,4.8vw,62px)}
+.obstacle-cone::before{content:'';display:block;width:100%;height:85%;background:linear-gradient(180deg,#FF6600,#FF3300 50%,#CC2200);clip-path:polygon(50% 0%,85% 100%,15% 100%);box-shadow:0 0 10px rgba(255,80,0,.5)}
+.obstacle-cone::after{content:'';display:block;width:120%;height:15%;margin-left:-10%;background:linear-gradient(180deg,#fff,#ddd);border-radius:2px}
+.obstacle-oil{width:clamp(42px,5.5vw,76px);height:clamp(20px,2.8vw,38px);background:radial-gradient(ellipse,rgba(20,0,60,.9) 30%,rgba(60,0,120,.6) 60%,transparent 100%);border-radius:50%;box-shadow:inset 0 0 10px rgba(100,0,200,.5),0 0 15px rgba(80,0,160,.4);animation:oilShimmer 1s linear infinite}
+.obstacle-rock{width:clamp(32px,4.2vw,58px);height:clamp(20px,2.8vw,40px);background:linear-gradient(135deg,#666,#444 40%,#333);border-radius:40% 50% 45% 55%;box-shadow:inset 2px 2px 6px rgba(255,255,255,.1),inset -2px -2px 6px rgba(0,0,0,.5),0 4px 8px rgba(0,0,0,.6)}
+#impact-flash{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-family:'Press Start 2P',monospace;font-size:clamp(18px,3vw,38px);color:#E8002D;text-shadow:0 0 20px rgba(232,0,45,.8),0 0 40px rgba(232,0,45,.4);background:rgba(232,0,45,.15);z-index:50;pointer-events:none}
+#impact-flash.show{display:flex;animation:flashIn .65s forwards}
+#impact-flash .isub{font-size:.5em;color:#ff7777;text-shadow:none}
+
+/* ════ RESULTADO ════ */
+#screen-result{background:#131313;animation:fadeIn .5s ease-out}
+#result-bg-fx{position:absolute;inset:0;pointer-events:none;z-index:0}
+.result-content{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:clamp(9px,1.6vh,20px);padding:16px 36px;max-width:860px;width:100%}
+.result-logo{font-family:'Press Start 2P',monospace;font-size:clamp(8px,1vw,13px);color:#E8002D;letter-spacing:.2em;text-shadow:0 0 10px rgba(232,0,45,.5)}
+.result-heading{font-family:'Press Start 2P',monospace;font-size:clamp(17px,2.8vw,34px);text-align:center;line-height:1.55}
+.result-score-display{display:flex;align-items:baseline;gap:10px;background:rgba(28,28,28,.9);border:2px solid rgba(255,215,0,.35);border-radius:12px;padding:clamp(9px,1.3vh,16px) clamp(22px,3.5vw,46px);box-shadow:0 0 28px rgba(255,215,0,.08)}
+.score-label{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:clamp(12px,1.4vw,17px);color:#888;letter-spacing:.14em}
+.result-score-number{font-family:'Press Start 2P',monospace;font-size:clamp(34px,5.5vw,68px);color:#FFD700;text-shadow:0 0 20px rgba(255,215,0,.6),0 0 40px rgba(255,215,0,.3);line-height:1}
+.score-pts{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:clamp(13px,1.6vw,20px);color:#888;letter-spacing:.18em}
+.result-prize-box{background:rgba(28,28,28,.85);border-radius:10px;padding:clamp(12px,1.8vh,22px) clamp(22px,3.5vw,46px);text-align:center;width:100%;max-width:620px}
+.result-prize-name{font-family:'Press Start 2P',monospace;font-size:clamp(10px,1.5vw,17px);line-height:1.65;margin-bottom:7px}
+.result-prize-desc{font-family:'Rajdhani',sans-serif;font-size:clamp(13px,1.6vw,19px);font-weight:600;color:#888}
+.result-instruction{font-family:'Rajdhani',sans-serif;font-size:clamp(13px,1.6vw,19px);font-weight:700;color:#fff;text-align:center;background:rgba(232,0,45,.1);border:1px solid rgba(232,0,45,.32);border-radius:8px;padding:clamp(9px,1.2vh,14px) clamp(18px,2.5vw,36px);max-width:580px}
+.result-motivational{font-family:'Rajdhani',sans-serif;font-size:clamp(13px,1.5vw,18px);font-weight:600;color:#555;text-align:center;font-style:italic;min-height:22px}
+/* prize tiers */
+.result-prize-1 .result-heading{color:#FFD700;text-shadow:0 0 20px rgba(255,215,0,.6),3px 3px 0 rgba(232,0,45,.4)}
+.result-prize-1 .result-prize-box{border:2px solid rgba(255,215,0,.45)}
+.result-prize-1 .result-prize-name{color:#FFD700}
+.result-prize-1 #result-bg-fx::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 40% at 50% 100%,rgba(255,215,0,.06),transparent);animation:particleDrift 4s ease-in-out infinite alternate}
+.result-prize-2 .result-heading{color:#fff;text-shadow:0 0 14px rgba(255,255,255,.35)}
+.result-prize-2 .result-prize-box{border:2px solid rgba(255,255,255,.18)}
+.result-prize-2 .result-prize-name{color:#e0e0e0}
+.result-prize-3 .result-heading{color:#b0b0b0}
+.result-prize-3 .result-prize-box{border:2px solid rgba(160,160,160,.22)}
+.result-prize-3 .result-prize-name{color:#b0b0b0}
+.result-prize-0 .result-heading{color:#777}
+.result-prize-0 .result-prize-box{border:1px solid rgba(100,100,100,.18)}
+.result-prize-0 .result-prize-name{color:#666}
+.result-prize-0 .result-score-number{color:#888;text-shadow:none}
+.result-prize-0 .result-score-display{border-color:rgba(100,100,100,.2)}
+/* defeat */
+.result-defeat .result-heading{color:#E8002D;text-shadow:0 0 20px rgba(232,0,45,.5)}
+.result-defeat .result-prize-box{border:2px solid rgba(232,0,45,.3)}
+.result-defeat .result-prize-name{font-family:'Rajdhani',sans-serif;font-size:clamp(16px,2vw,24px);font-weight:700;color:#fff;line-height:1.4}
+.result-defeat .result-score-number{color:#E8002D;text-shadow:0 0 16px rgba(232,0,45,.4)}
+.result-defeat .result-score-display{border-color:rgba(232,0,45,.35)}
+.btn-restart{font-family:'Press Start 2P',monospace;font-size:clamp(8px,1vw,12px);color:#fff;background:transparent;border:2px solid #E8002D;padding:clamp(9px,1.2vh,14px) clamp(18px,2.5vw,32px);border-radius:6px;cursor:pointer;letter-spacing:.08em;transition:background .2s,box-shadow .2s,transform .1s}
+.btn-restart:hover{background:rgba(232,0,45,.14);box-shadow:0 0 20px rgba(232,0,45,.4);transform:translateY(-1px)}
+.btn-restart:active{transform:translateY(1px)}
+
+/* ════ KEYFRAMES ════ */
+/* ── PHASE / PODIO / RANKING-FEEDBACK ── */
+#phase-msg{position:absolute;top:22%;left:50%;transform:translateX(-50%);font-family:'Press Start 2P',monospace;font-size:clamp(11px,1.5vw,17px);color:#FFD700;text-shadow:0 0 14px rgba(255,215,0,.8);background:rgba(0,0,0,.6);padding:10px 22px;border-radius:6px;border:1px solid rgba(255,215,0,.35);pointer-events:none;z-index:60;opacity:0;transition:opacity .3s}
+#phase-msg.show{opacity:1}
+#podio-msg{position:absolute;top:35%;left:50%;transform:translateX(-50%);font-family:'Press Start 2P',monospace;font-size:clamp(12px,1.7vw,20px);color:#FFD700;text-shadow:0 0 18px rgba(255,215,0,.9);background:rgba(0,0,0,.65);padding:12px 28px;border-radius:8px;border:1px solid rgba(255,215,0,.4);pointer-events:none;z-index:60;opacity:0;transition:opacity .4s;white-space:nowrap}
+#podio-msg.show{opacity:1}
+.ranking-feedback{font-family:'Rajdhani',sans-serif;font-size:clamp(13px,1.4vw,17px);font-weight:600;color:#888;text-align:center;min-height:22px;margin-top:2px}
+@keyframes roadScroll{from{background-position:0 0}to{background-position:0 82px}}
+@keyframes titleGlow{from{text-shadow:0 0 12px rgba(255,215,0,.8),0 0 35px rgba(255,215,0,.4),3px 3px 0 #E8002D,6px 6px 0 rgba(232,0,45,.3)}to{text-shadow:0 0 22px rgba(255,215,0,1),0 0 65px rgba(255,215,0,.6),3px 3px 0 #E8002D,6px 6px 0 rgba(232,0,45,.5)}}
+@keyframes pulseGlow{0%,100%{box-shadow:0 6px 0 #900020,0 0 20px rgba(232,0,45,.3)}50%{box-shadow:0 6px 0 #900020,0 0 55px rgba(232,0,45,.75),0 0 85px rgba(232,0,45,.3)}}
+@keyframes twinkle{from{opacity:.3;transform:scale(1)}to{opacity:1;transform:scale(1.5)}}
+@keyframes palmBob{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+@keyframes speedH{from{background-position:0 0}to{background-position:40px 0}}
+@keyframes speedV{from{background-position:0 0}to{background-position:0 40px}}
+@keyframes flashIn{0%{opacity:1;transform:scale(1.2)}60%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.9)}}
+@keyframes oilShimmer{0%,100%{box-shadow:inset 0 0 10px rgba(100,0,200,.5),0 0 15px rgba(80,0,160,.4)}50%{box-shadow:inset 0 0 14px rgba(0,100,200,.5),0 0 20px rgba(0,80,200,.4)}}
+@keyframes taillightFlicker{from{opacity:.85}to{opacity:1;box-shadow:0 0 10px rgba(255,34,0,1),0 0 20px rgba(255,34,0,.6)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes particleDrift{from{transform:translateY(0)}to{transform:translateY(-22px)}}
+@keyframes dodgeFly{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-55px)}}
+</style>
+</head>
+<body>
+
+<!-- ══ STAFF BUTTON ══ -->
+<button id="btn-staff">STAFF</button>
+
+<!-- ══ POPUP: STAFF ══ -->
+<div id="popup-staff" class="popup-overlay hidden">
+  <div class="popup-box pb-red" style="max-width:360px;text-align:center">
+    <div class="staff-title">RESET</div>
+    <div class="staff-text">¿Preparar juego para el siguiente cliente?</div>
+    <div class="staff-btn-row">
+      <button id="btn-staff-confirm" class="btn-primary">SÍ, RESETEAR</button>
+      <button id="btn-staff-cancel" class="btn-secondary">CANCELAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ POPUP: REGISTRO ══ -->
+<div id="popup-register" class="popup-overlay hidden">
+  <div class="popup-box pb-gold">
+    <button class="popup-close" id="btn-close-register">✕</button>
+    <div class="popup-title" style="color:#FFD700">REGISTRÁ TU NOMBRE</div>
+    <div class="popup-subtitle">Tu resultado quedará en el ranking de JMF</div>
+    <input type="text" id="input-name" class="popup-input" placeholder="Ej: Juan Pérez" maxlength="40" autocomplete="off"/>
+    <div id="name-error" class="input-error"></div>
+    <div class="popup-btn-row">
+      <button id="btn-confirm-name" class="btn-primary">¡A JUGAR!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ POPUP: PREMIOS ══ -->
+<div id="popup-prizes" class="popup-overlay hidden">
+  <div class="popup-box pb-gold">
+    <button class="popup-close" onclick="closePopup('popup-prizes')">✕</button>
+    <div class="popup-title" style="color:#FFD700">PREMIOS</div>
+    <ul class="prizes-list">
+      <li><span class="pli-pts">800+ pts</span> 🏆 30% OFF en cualquier servicio</li>
+      <li><span class="pli-pts">500–799 pts</span> 🥈 10% OFF en cualquier servicio</li>
+      <li><span class="pli-pts">250–499 pts</span> 🥉 Lavado Premium + Detallado de Interior gratis</li>
+      <li><span class="pli-pts">0–249 pts</span> 💥 Sin premio — ¡Seguí entrenando!</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══ POPUP: RANKING ══ -->
+<div id="popup-ranking" class="popup-overlay hidden">
+  <div class="popup-box pb-white" style="max-width:660px">
+    <button class="popup-close" onclick="closePopup('popup-ranking')">✕</button>
+    <div class="popup-title" style="color:#fff">RANKING</div>
+    <div id="ranking-list"><p class="ranking-loading">Cargando ranking...</p></div>
+  </div>
+</div>
+
+<!-- ══ POPUP: INSTRUCCIONES ══ -->
+<div id="popup-howto" class="popup-overlay hidden">
+  <div class="popup-box pb-gray">
+    <button class="popup-close" onclick="closePopup('popup-howto')">✕</button>
+    <div class="popup-title" style="color:#bbb">¿CÓMO JUGAR?</div>
+    <ul class="howto-list">
+      <li><span class="hi">🎮</span><div><span class="hl">CONTROLES:</span> Usá ← → para mover el auto</div></li>
+      <li><span class="hi">🚗</span><div><span class="hl">OBJETIVO:</span> Esquivá todos los obstáculos durante 45 segundos</div></li>
+      <li><span class="hi">❤️</span><div><span class="hl">VIDAS:</span> Tenés 3 vidas. Cada impacto = -1 vida y -100 puntos</div></li>
+      <li><span class="hi">💥</span><div><span class="hl">CUIDADO:</span> Si perdés las 3 vidas, el juego termina y perdés todo</div></li>
+      <li><span class="hi">⏱️</span><div><span class="hl">TIEMPO:</span> El juego dura 45 segundos si no perdés las 3 vidas</div></li>
+      <li><span class="hi">🏆</span><div><span class="hl">PREMIOS:</span> Cuantos más puntos, mejor el premio</div></li>
+      <li><span class="hi">📋</span><div><span class="hl">RANKING:</span> Tu resultado queda guardado en el ranking de JMF</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════ BIENVENIDA ═══════════════════════ -->
+<div id="screen-welcome" class="screen active">
+  <div class="welcome-content">
+    <div class="welcome-logo">JMF <span>DETAILING</span></div>
+    <h1 class="game-title">JMF RACING<br>CHALLENGE</h1>
+    <p class="game-subtitle">¿Podés mantenerte en pista?</p>
+    <button id="btn-start" class="btn-start">¡LARGAR!</button>
+  </div>
+  <div class="floating-btns">
+    <button class="float-btn" id="fb-prizes" data-tip="Ver premios">🏆</button>
+    <button class="float-btn" id="fb-ranking" data-tip="Ver ranking">👥</button>
+    <button class="float-btn" id="fb-howto" data-tip="¿Cómo jugar?">❓</button>
+  </div>
+  <div class="screen-footer">JMF Detailing · San Fernando · @jmf.detailing</div>
+</div>
+
+<!-- ═══════════════════════ JUEGO ═══════════════════════ -->
+<div id="screen-game" class="screen">
+  <div id="hud">
+    <div class="hud-block">
+      <div class="hud-label">TIEMPO</div>
+      <div id="hud-time" class="hud-value">45</div>
+    </div>
+    <div class="hud-block hud-lives">
+      <div class="hud-label">VIDAS</div>
+      <div class="lives-icons">
+        <span class="life-icon" id="life-1">🚗</span>
+        <span class="life-icon" id="life-2">🚗</span>
+        <span class="life-icon" id="life-3">🚗</span>
+      </div>
+    </div>
+    <div class="hud-block">
+      <div class="hud-label">SCORE</div>
+      <div id="hud-score" class="hud-value score-value">0</div>
+    </div>
+  </div>
+  <div id="game-world">
+    <canvas id="game-canvas"></canvas>
+    <div id="play-area">
+      <div id="player-car">
+        <div class="car-body">
+          <div class="car-roof"></div><div class="car-windshield"></div>
+          <div class="car-hood"></div><div class="car-spoiler"></div>
+          <div class="car-stripe"></div><div class="car-wl"></div><div class="car-wr"></div>
+          <div class="car-el"></div><div class="car-er"></div>
+          <div class="car-tl"></div><div class="car-tr"></div>
+        </div>
+      </div>
+    </div>
+    <div id="impact-flash">¡IMPACTO!<span class="isub">-150 pts</span></div>
+    <div id="phase-msg"></div>
+    <div id="podio-msg"></div>
+  </div>
+  <div class="screen-footer">JMF Detailing · San Fernando · @jmf.detailing</div>
+</div>
+
+<!-- ═══════════════════════ RESULTADO ═══════════════════════ -->
+<div id="screen-result" class="screen">
+  <div id="result-bg-fx"></div>
+  <div id="result-content" class="result-content">
+    <div class="result-logo">JMF DETAILING</div>
+    <div id="result-heading" class="result-heading"></div>
+    <div class="result-score-display">
+      <span class="score-label">PUNTAJE FINAL</span>
+      <span id="result-score-number" class="result-score-number">0</span>
+      <span class="score-pts">PTS</span>
+    </div>
+    <div id="result-prize-box" class="result-prize-box">
+      <div id="result-prize-name" class="result-prize-name"></div>
+      <div id="result-prize-desc" class="result-prize-desc"></div>
+    </div>
+    <div id="result-instruction" class="result-instruction"></div>
+    <div class="result-actions">
+      <button id="btn-restart" class="btn-restart">VOLVER AL INICIO</button>
+    </div>
+    <div id="result-motivational" class="result-motivational"></div>
+    <div id="ranking-feedback" class="ranking-feedback"></div>
+  </div>
+  <div class="screen-footer">JMF Detailing · San Fernando · @jmf.detailing</div>
+</div>
+
+<script>
+'use strict';
+
+/* ═══ JSONBIN CONFIG ═══ */
+const JSONBIN_API_KEY = '$2a$10$EO512AcvnbFE7.hlcUCpZuZnRuKHwt.Hd3CaKdY7s1XpNq/oqW2Yq';
+const JSONBIN_BIN_ID  = '6a2f09fbda38895dfec00b17';
+
+/* ═══ GAME CONSTANTS ═══ */
+const GAME_DURATION  = 45;
+const MAX_LIVES      = 3;
+const PTS_PER_SECOND = 8;
+const PTS_PER_DODGE  = 25;
+const IMPACT_PENALTY = 150;
+
+// 3 carriles como % del ancho del play-area
+const LANE_LEFT   = 25;
+const LANE_CENTER = 50;
+const LANE_RIGHT  = 75;
+const LANES_3 = [LANE_LEFT, LANE_CENTER, LANE_RIGHT];
+
+// Dificultad por fase — tipos disponibles y velocidades en px/s
+const DIFFICULTY = [
+  { until:20, types:['A'],     speedMin:170, speedMax:200, spawnInterval:2500, pairMode:false }, // FASE 1: primeros 20s
+  { until:45, types:['A','B'], speedMin:340, speedMax:400, spawnInterval:1800, pairMode:true  }, // FASE 2: últimos 25s
+];
+
+const OBS_TYPES = ['cone','oil','rock'];
+
+const PRIZES = [
+  { min:800, tier:1, heading:'🏆 ¡CAMPEÓN DE PISTA!',  prize:'GANÁS 30% OFF EN TU PRÓXIMO SERVICIO JMF', desc:'Aplicable a cualquier servicio de detailing, pulido o ceramic coating', instr:'Mostrá esta pantalla al staff para reclamar tu premio', motiv:'',                                 short:'30% OFF' },
+  { min:500, tier:2, heading:'🥈 ¡GRAN PILOTO!',       prize:'GANÁS 10% OFF EN TU PRÓXIMO SERVICIO JMF', desc:'Aplicable a cualquier servicio de detailing o limpieza',               instr:'Mostrá esta pantalla al staff para reclamar tu premio', motiv:'',                                 short:'10% OFF' },
+  { min:250, tier:3, heading:'🥉 ¡BUEN INTENTO!',      prize:'GANÁS UN LAVADO PREMIUM + DETALLADO DE INTERIOR', desc:'Gratis en tu próxima visita a JMF Detailing',                 instr:'Mostrá esta pantalla al staff para reclamar tu premio', motiv:'',                                 short:'Lavado Premium' },
+  { min:  0, tier:0, heading:'¡SEGUÍ ENTRENANDO!',      prize:'Esta vez no alcanzó, pero la pista te espera', desc:'Volvé a intentarlo en tu próxima visita a JMF Detailing',         instr:'',                                                     motiv:'Los campeones no nacen, se detallan 🔧', short:'Sin Premio' },
+];
+
+/* ═══ GLOBALS ═══ */
+let currentPlayerName  = '';
+let lastSavedTimestamp = 0;
+let state = {};
+
+/* ═══ DOM REFS ═══ */
+const screens = {
+  welcome: document.getElementById('screen-welcome'),
+  game:    document.getElementById('screen-game'),
+  result:  document.getElementById('screen-result'),
+};
+const el = {
+  hudTime:         document.getElementById('hud-time'),
+  hudScore:        document.getElementById('hud-score'),
+  life:            [null, document.getElementById('life-1'), document.getElementById('life-2'), document.getElementById('life-3')],
+  playerCar:       document.getElementById('player-car'),
+  playArea:        document.getElementById('play-area'),
+  impactFlash:     document.getElementById('impact-flash'),
+  phaseMsg:        document.getElementById('phase-msg'),
+  podioMsg:        document.getElementById('podio-msg'),
+  resultContent:   document.getElementById('result-content'),
+  resultHeading:   document.getElementById('result-heading'),
+  resultScore:     document.getElementById('result-score-number'),
+  resultPrizeName: document.getElementById('result-prize-name'),
+  resultPrizeDesc: document.getElementById('result-prize-desc'),
+  resultPrizeBox:  document.getElementById('result-prize-box'),
+  resultInstr:     document.getElementById('result-instruction'),
+  resultMotiv:     document.getElementById('result-motivational'),
+  rankingFeedback: document.getElementById('ranking-feedback'),
+};
+
+/* ═══ HELPERS ═══ */
+function rand(a,b){return Math.random()*(b-a)+a}
+function randInt(a,b){return Math.floor(rand(a,b+1))}
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v))}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function normalizeName(name){
+  return name.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function getDiff(){
+  const elapsed = GAME_DURATION - state.timeLeft;
+  for(const d of DIFFICULTY) if(elapsed < d.until) return d;
+  return DIFFICULTY[DIFFICULTY.length-1];
+}
+
+function getDiffIndex(){
+  const elapsed = GAME_DURATION - state.timeLeft;
+  for(let i=0;i<DIFFICULTY.length;i++) if(elapsed < DIFFICULTY[i].until) return i;
+  return DIFFICULTY.length-1;
+}
+
+/* ═══ SCREEN NAV ═══ */
+function showScreen(name){
+  Object.values(screens).forEach(s=>s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+/* ═══ POPUP MANAGEMENT ═══ */
+function openPopup(id){ document.getElementById(id).classList.remove('hidden'); }
+function closePopup(id){ document.getElementById(id).classList.add('hidden'); }
+
+['popup-prizes','popup-ranking','popup-howto'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', function(e){
+    if(e.target===this) closePopup(id);
+  });
+});
+document.getElementById('popup-staff').addEventListener('click', function(e){
+  if(e.target===this) closePopup('popup-staff');
+});
+
+/* ═══ REGISTRO ═══ */
+document.getElementById('btn-start').addEventListener('click', openRegisterPopup);
+
+function openRegisterPopup(){
+  document.getElementById('input-name').value = '';
+  document.getElementById('name-error').textContent = '';
+  openPopup('popup-register');
+  setTimeout(()=>document.getElementById('input-name').focus(), 80);
+}
+
+document.getElementById('btn-close-register').addEventListener('click', ()=>closePopup('popup-register'));
+document.getElementById('btn-confirm-name').addEventListener('click', confirmRegister);
+document.getElementById('input-name').addEventListener('keydown', e=>{
+  e.stopPropagation();
+  if(e.key==='Enter') confirmRegister();
+});
+
+function confirmRegister(){
+  const val = document.getElementById('input-name').value.trim();
+  if(val.length < 2){
+    document.getElementById('name-error').textContent = 'Ingresá tu nombre para continuar';
+    return;
+  }
+  currentPlayerName = val;
+  closePopup('popup-register');
+  startGame();
+}
+
+/* ═══ INFO POPUPS ═══ */
+document.getElementById('fb-prizes').addEventListener('click', ()=>openPopup('popup-prizes'));
+document.getElementById('fb-ranking').addEventListener('click', ()=>{ openPopup('popup-ranking'); loadRanking(); });
+document.getElementById('fb-howto').addEventListener('click', ()=>openPopup('popup-howto'));
+
+/* ═══ STAFF ═══ */
+document.getElementById('btn-staff').addEventListener('click', ()=>openPopup('popup-staff'));
+document.getElementById('btn-staff-cancel').addEventListener('click', ()=>closePopup('popup-staff'));
+document.getElementById('btn-staff-confirm').addEventListener('click', ()=>{ closePopup('popup-staff'); hardReset(); });
+
+/* ═══ HARD RESET ═══ */
+function hardReset(){
+  state.running = false;
+  cancelAnimationFrame(state.animFrameId);
+  clearTimeout(state.spawnTimeout);
+  (state.pendingTimeouts||[]).forEach(id=>clearTimeout(id));
+  document.querySelectorAll('.obstacle').forEach(o=>o.remove());
+  el.impactFlash.classList.remove('show');
+  el.phaseMsg.classList.remove('show');
+  el.podioMsg.classList.remove('show');
+  currentPlayerName = '';
+  state = {};
+  showScreen('welcome');
+}
+
+function resetToWelcome(){ hardReset(); }
+document.getElementById('btn-restart').addEventListener('click', resetToWelcome);
+
+/* ═══ START GAME ═══ */
+function startGame(){
+  (state.pendingTimeouts||[]).forEach(id=>clearTimeout(id));
+  state = {
+    running:true, score:0, lives:MAX_LIVES,
+    timeLeft:GAME_DURATION, elapsed:0,
+    playerX:50, obstacles:[],
+    lastTimestamp:null, lastScoreTick:0,
+    impactCooldown:0, keysDown:{},
+    animFrameId:null, spawnTimeout:null, pendingTimeouts:[],
+    // milestones
+    podioShown:false,
+    // canvas renderer
+    roadOffset:0, shakeX:0,
+  };
+  document.querySelectorAll('.obstacle').forEach(o=>o.remove());
+  for(let i=1;i<=MAX_LIVES;i++) el.life[i].classList.remove('lost');
+  el.hudScore.textContent = '0';
+  el.hudTime.textContent  = GAME_DURATION;
+  el.hudTime.style.color  = '#fff';
+  el.playerCar.style.left = '50%';
+  el.playerCar.style.transform = 'translateX(-50%)';
+  el.impactFlash.classList.remove('show');
+  el.phaseMsg.classList.remove('show');
+  el.podioMsg.classList.remove('show');
+  el.rankingFeedback.textContent = '';
+  showScreen('game');
+  setupCanvas();
+  state.spawnTimeout = setTimeout(spawnObstacleNew, 1200);
+  state.animFrameId = requestAnimationFrame(gameLoop);
+}
+
+/* ═══ PHASE MESSAGE ═══ */
+function showPhaseMessage(){
+  el.phaseMsg.textContent = '⚡ ¡VELOCIDAD!';
+  el.phaseMsg.style.color = '#E8002D';
+  el.phaseMsg.classList.add('show');
+  const tid = setTimeout(()=>el.phaseMsg.classList.remove('show'), 1500);
+  state.pendingTimeouts.push(tid);
+}
+
+/* ═══ PODIO MESSAGE ═══ */
+function showPodioMessage(){
+  el.podioMsg.textContent = '🏆 ¡VAS POR EL PODIO!';
+  el.podioMsg.classList.add('show');
+  const tid = setTimeout(()=>el.podioMsg.classList.remove('show'), 2000);
+  state.pendingTimeouts.push(tid);
+}
+
+/* ═══ GAME LOOP ═══ */
+function gameLoop(ts){
+  if(!state.running) return;
+  if(!state.lastTimestamp) state.lastTimestamp = ts;
+  const dt = Math.min(ts - state.lastTimestamp, 50);
+  state.lastTimestamp = ts;
+  state.elapsed += dt;
+
+  state.timeLeft = Math.max(0, GAME_DURATION - state.elapsed/1000);
+  el.hudTime.textContent = Math.ceil(state.timeLeft);
+  el.hudTime.style.color = state.timeLeft <= 10 ? '#E8002D' : '#fff';
+
+  state.lastScoreTick += dt;
+  if(state.lastScoreTick >= 1000){ state.lastScoreTick -= 1000; addScore(PTS_PER_SECOND); }
+
+  // Movimiento jugador — limitado al ancho de la carretera
+  const moveSpeed = 55;
+  if(state.keysDown['ArrowLeft'])  state.playerX = clamp(state.playerX - moveSpeed*dt/1000, 10, 90);
+  if(state.keysDown['ArrowRight']) state.playerX = clamp(state.playerX + moveSpeed*dt/1000, 10, 90);
+  el.playerCar.style.left = state.playerX + '%';
+
+  const areaH = el.playArea.offsetHeight;
+  const areaW = el.playArea.offsetWidth;
+  state.impactCooldown = Math.max(0, state.impactCooldown - dt);
+
+  // Hitbox del auto: 70% del ancho visual
+  const carVisualW = el.playerCar.offsetWidth || areaW * 0.14;
+  const hitHalfW   = (carVisualW * 0.70) / 2;
+
+  for(const obs of state.obstacles){
+    if(obs.removed) continue;
+
+    obs.y += obs.speed * dt/1000;
+
+    // Tipo B: movimiento lateral hacia el centro
+    if(obs.behavior === 'B'){
+      const dir = LANE_CENTER > obs.x ? 1 : -1;
+      obs.x += dir * (obs.speed * 0.5) * dt/1000;
+      if(dir > 0 && obs.x > LANE_CENTER) obs.x = LANE_CENTER;
+      if(dir < 0 && obs.x < LANE_CENTER) obs.x = LANE_CENTER;
+      obs.el.style.left = obs.x + '%';
+    }
+
+    const progress = obs.y / areaH;
+    const scale = clamp(0.3 + progress*0.9, 0.28, 1.25);
+    obs.el.style.top = obs.y + 'px';
+    obs.el.style.transform = `translateX(-50%) scale(${scale})`;
+    obs.el.style.opacity = Math.min(1, progress*3.5);
+
+    const playerPx = (state.playerX/100)*areaW;
+    const obsPx    = (obs.x/100)*areaW;
+    const dx = Math.abs(playerPx - obsPx);
+
+    // Dodge exitoso
+    if(!obs.passed && !obs.hit && obs.y > areaH*0.83){
+      if(dx > hitHalfW + areaW*0.015){
+        obs.passed = true;
+        addScore(PTS_PER_DODGE);
+        showDodge(obs.el);
+      }
+    }
+
+    // Colisión — hitbox 70%, activa durante todo el recorrido (cubre Tipo B)
+    if(!obs.hit && !obs.passed && state.impactCooldown <= 0){
+      if(obs.y > areaH*0.70 && obs.y < areaH*0.97 && dx < hitHalfW){
+        obs.hit = true; obs.passed = true;
+        handleCollision(obs.el);
+      }
+    }
+
+    if(obs.y > areaH + 90){ obs.el.remove(); obs.removed = true; }
+  }
+  state.obstacles = state.obstacles.filter(o=>!o.removed);
+
+  if(state.lives <= 0){ endGame(true); return; }
+  if(state.timeLeft <= 0){ endGame(false); return; }
+  state.roadOffset += Math.min(dt, 50) * 0.055;
+  renderCanvas();
+  state.animFrameId = requestAnimationFrame(gameLoop);
+}
+
+/* ═══ SISTEMA DE SPAWN ═══ */
+const OBS_SPEED = 270; // 4.5px/frame a 60fps
+
+function spawnObstacleNew(){
+  if(!state.running) return;
+  const active = state.obstacles.filter(o=>!o.removed&&!o.hit&&!o.passed).length;
+  if(active < 4){
+    if(Math.random() < 0.50){
+      // SIMPLE — 1 carril aleatorio
+      createObstacle(LANES_3[randInt(0, LANES_3.length-1)]);
+    } else {
+      // DOBLE — 2 carriles, deja 1 libre
+      const pairs=[
+        [LANE_LEFT, LANE_CENTER],
+        [LANE_LEFT, LANE_RIGHT],
+        [LANE_CENTER, LANE_RIGHT],
+      ];
+      pairs[randInt(0, pairs.length-1)].forEach(laneX=>createObstacle(laneX));
+    }
+  }
+  scheduleNextSpawn();
+}
+
+function scheduleNextSpawn(){
+  if(!state.running) return;
+  const intervals=[1000,1400,1800];
+  const ms=intervals[randInt(0, intervals.length-1)];
+  state.spawnTimeout=setTimeout(spawnObstacleNew, ms);
+}
+
+function createObstacle(laneX){
+  const type=OBS_TYPES[randInt(0, OBS_TYPES.length-1)];
+  const obsEl=document.createElement('div');
+  obsEl.className=`obstacle obstacle-${type}`;
+  obsEl.style.cssText=`left:${laneX}%;top:-70px;opacity:0`;
+  el.playArea.appendChild(obsEl);
+  state.obstacles.push({el:obsEl,x:laneX,lane:laneX,y:-70,speed:OBS_SPEED,type,behavior:'A',passed:false,hit:false,removed:false});
+}
+
+/* ═══ COLLISION ═══ */
+function handleCollision(obsEl){
+  state.lives--;
+  state.score = Math.max(0, state.score - IMPACT_PENALTY);
+  el.hudScore.textContent = state.score;
+  state.impactCooldown = 1200;
+
+  el.impactFlash.classList.remove('show');
+  void el.impactFlash.offsetWidth;
+  el.impactFlash.classList.add('show');
+  const tid = setTimeout(()=>el.impactFlash.classList.remove('show'), 700);
+  state.pendingTimeouts.push(tid);
+
+  const lostIdx = MAX_LIVES - state.lives + 1;
+  if(el.life[lostIdx]) el.life[lostIdx].classList.add('lost');
+  shakeCar();
+  if(obsEl){
+    obsEl.style.transition='transform .2s,opacity .3s';
+    obsEl.style.transform='translateX(-50%) scale(1.5)';
+    obsEl.style.opacity='0';
+  }
+}
+
+function shakeCar(){
+  const shakes=[9,-9,6,-6,3,-3,0]; let i=0;
+  const iv=setInterval(()=>{
+    if(i>=shakes.length){clearInterval(iv);el.playerCar.style.transform='translateX(-50%)';state.shakeX=0;return;}
+    el.playerCar.style.transform=`translateX(calc(-50% + ${shakes[i]}px))`;
+    state.shakeX=shakes[i];
+    i++;
+  },48);
+}
+
+/* ═══ DODGE ═══ */
+function showDodge(obsEl){
+  if(!obsEl||!obsEl.parentNode) return;
+  const tip=document.createElement('div');
+  tip.textContent='+'+PTS_PER_DODGE;
+  tip.style.cssText=`position:absolute;left:${obsEl.style.left};top:${obsEl.style.top};transform:translateX(-50%);font-family:'Press Start 2P',monospace;font-size:clamp(8px,1.1vw,12px);color:#FFD700;text-shadow:0 0 8px rgba(255,215,0,.8);pointer-events:none;z-index:50;animation:dodgeFly .85s forwards`;
+  el.playArea.appendChild(tip);
+  setTimeout(()=>tip.remove(),900);
+}
+
+/* ═══ SCORE ═══ */
+function addScore(pts){
+  const prev = state.score;
+  state.score += pts;
+  el.hudScore.textContent = state.score;
+  el.hudScore.style.transform='scale(1.18)';
+  setTimeout(()=>{el.hudScore.style.transform='scale(1)';},120);
+  // Milestone: 500 pts por primera vez
+  if(!state.podioShown && prev < 500 && state.score >= 500){
+    state.podioShown = true;
+    showPodioMessage();
+  }
+}
+
+/* ═══ END GAME ═══ */
+function endGame(defeat){
+  state.running=false;
+  cancelAnimationFrame(state.animFrameId);
+  clearTimeout(state.spawnTimeout);
+  const delay=defeat?500:650;
+  const tid=setTimeout(()=>{ defeat ? showDefeat() : showResult(); }, delay);
+  state.pendingTimeouts.push(tid);
+}
+
+/* ═══ DERROTA TOTAL ═══ */
+function showDefeat(){
+  el.resultContent.className='result-content result-defeat';
+  el.resultHeading.textContent='💥 ¡SIN VIDAS!';
+  el.resultScore.textContent='0';
+  el.resultPrizeName.textContent='Perdiste las 3 vidas. ¡La próxima será!';
+  el.resultPrizeDesc.textContent='Volvé a intentarlo en tu próxima visita a JMF Detailing';
+  el.resultPrizeBox.style.display='';
+  el.resultInstr.style.display='none';
+  el.resultMotiv.textContent='';
+  el.rankingFeedback.textContent='';
+  showScreen('result');
+}
+
+/* ═══ RESULTADO NORMAL ═══ */
+function showResult(){
+  const score=state.score;
+  let prize=PRIZES[PRIZES.length-1];
+  for(const p of PRIZES){ if(score>=p.min){prize=p;break;} }
+
+  el.resultContent.className=`result-content result-prize-${prize.tier}`;
+  el.resultHeading.textContent=prize.heading;
+  el.resultPrizeName.textContent=prize.prize;
+  el.resultPrizeDesc.textContent=prize.desc;
+  el.resultInstr.textContent=prize.instr;
+  el.resultMotiv.textContent=prize.motiv;
+  el.resultInstr.style.display=prize.instr?'':'none';
+  el.resultPrizeBox.style.display='';
+  el.resultScore.textContent='0';
+  el.rankingFeedback.textContent='';
+  showScreen('result');
+
+  let displayed=0;
+  const step=Math.max(1,Math.ceil(score/60));
+  const cu=setInterval(()=>{
+    displayed=Math.min(displayed+step,score);
+    el.resultScore.textContent=displayed;
+    if(displayed>=score) clearInterval(cu);
+  },20);
+
+  saveToRanking(score, prize.short);
+}
+
+/* ═══ JSONBIN: GUARDAR (mejor puntaje mensual por jugador) ═══ */
+async function saveToRanking(score, prizeShort){
+  if(score<=0){ el.rankingFeedback.textContent=''; return; }
+  const today         = new Date().toISOString().split('T')[0];
+  const mes           = today.slice(0,7);
+  const ts            = Date.now();
+  const nombreOriginal = currentPlayerName || 'Anónimo';
+  const nombreNorm     = normalizeName(nombreOriginal);
+
+  try{
+    const gr = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`,{headers:{'X-Master-Key':JSONBIN_API_KEY}});
+    const gd = await gr.json();
+    let ranking = Array.isArray(gd.record?.ranking) ? gd.record.ranking : [];
+
+    const existIdx = ranking.findIndex(r=>normalizeName(r.nombre)===nombreNorm && r.mes===mes);
+    let saveCase = null;
+
+    if(existIdx === -1){
+      // CASO A: primera entrada este mes
+      ranking.push({nombre:nombreOriginal, nombreNormalizado:nombreNorm, puntaje:score, premio:prizeShort, mes, fecha:today, timestamp:ts});
+      saveCase='A';
+      console.log('Nuevo registro guardado');
+    } else if(score > ranking[existIdx].puntaje){
+      // CASO B: nuevo récord personal
+      ranking[existIdx]={nombre:nombreOriginal, nombreNormalizado:nombreNorm, puntaje:score, premio:prizeShort, mes, fecha:today, timestamp:ts};
+      saveCase='B';
+      console.log('Puntaje actualizado (nuevo récord personal)');
+    } else {
+      // CASO C: el puntaje anterior era mejor
+      saveCase='C';
+      console.log('Puntaje anterior era mejor, no se actualiza');
+    }
+
+    if(saveCase==='A'||saveCase==='B'){
+      ranking.sort((a,b)=>b.puntaje-a.puntaje);
+      await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`,{
+        method:'PUT',
+        headers:{'X-Master-Key':JSONBIN_API_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({ranking}),
+      });
+      lastSavedTimestamp=ts;
+    }
+
+    const feedbackMap={
+      A:'✅ Resultado guardado en el ranking',
+      B:'🏆 ¡Nuevo récord personal! Resultado actualizado',
+      C:'Tu mejor puntaje este mes era mayor. Se mantiene en el ranking',
+    };
+    el.rankingFeedback.textContent = feedbackMap[saveCase]||'';
+
+  }catch(e){
+    console.error('Error guardando en ranking:',e);
+    el.rankingFeedback.textContent='⚠️ Sin conexión al ranking';
+  }
+}
+
+/* ═══ JSONBIN: CARGAR RANKING ═══ */
+async function loadRanking(){
+  const container=document.getElementById('ranking-list');
+  container.innerHTML='<p class="ranking-loading">Cargando ranking...</p>';
+  try{
+    const resp=await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`,{headers:{'X-Master-Key':JSONBIN_API_KEY}});
+    const data=await resp.json();
+    const ranking=(data.record?.ranking||[]).slice(0,10);
+    if(!ranking.length){
+      container.innerHTML='<p class="ranking-empty">Aún no hay resultados. ¡Sé el primero!</p>';
+      return;
+    }
+    const medals=['🥇','🥈','🥉'];
+    let html=`<table class="ranking-table"><thead><tr><th>POS</th><th>NOMBRE</th><th>PUNTAJE</th><th>PREMIO</th></tr></thead><tbody>`;
+    ranking.forEach((row,i)=>{
+      const pos=medals[i]||(i+1);
+      const isCurrent=lastSavedTimestamp&&Math.abs(row.timestamp-lastSavedTimestamp)<10000;
+      const cls=isCurrent?' class="ranking-row-current"':'';
+      html+=`<tr${cls}><td>${pos}</td><td>${escHtml(row.nombre)}</td><td>${row.puntaje}</td><td>${escHtml(row.premio)}</td></tr>`;
+    });
+    html+='</tbody></table>';
+    container.innerHTML=html;
+  }catch(e){
+    container.innerHTML='<p class="ranking-empty">No se pudo cargar el ranking.</p>';
+    console.error('Error cargando ranking:',e);
+  }
+}
+
+/* ═══ TECLADO ═══ */
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('popup-register').classList.contains('hidden')) return;
+  state.keysDown=state.keysDown||{};
+  state.keysDown[e.key]=true;
+  if(screens.welcome.classList.contains('active')&&(e.key==='Enter'||e.key===' ')) openRegisterPopup();
+  if(screens.result.classList.contains('active')&&(e.key==='Enter'||e.key===' ')) resetToWelcome();
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+});
+document.addEventListener('keyup',e=>{if(state.keysDown) delete state.keysDown[e.key];});
+
+/* floating btn styles */
+document.getElementById('fb-prizes').style.borderColor='#FFD700';
+document.getElementById('fb-ranking').style.borderColor='#ffffff';
+document.getElementById('fb-howto').style.borderColor='#888888';
+
+/* ═══════════════════════════════════════════════════════════════
+   CANVAS PSEUDO-3D RENDERER
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Static star field (generated once) ── */
+const STARS = (function(){
+  const arr=[];
+  for(let i=0;i<90;i++) arr.push({x:Math.random(),y:Math.random(),r:Math.random()<0.72?1:2});
+  return arr;
+})();
+
+/* ── Palm tree definitions: depth 0=horizon 1=bottom, xOff=fraction of grass width from road edge ── */
+const PALM_DEFS = [
+  // LEFT — 10 palmeras distribuidas desde el horizonte hasta el borde inferior
+  {side:'L',depth:0.05,xOff:0.42,phase:0.0},
+  {side:'L',depth:0.16,xOff:0.70,phase:0.9},
+  {side:'L',depth:0.27,xOff:0.30,phase:1.7},
+  {side:'L',depth:0.38,xOff:0.78,phase:2.4},
+  {side:'L',depth:0.49,xOff:0.48,phase:0.5},
+  {side:'L',depth:0.60,xOff:0.22,phase:1.3},
+  {side:'L',depth:0.70,xOff:0.63,phase:2.1},
+  {side:'L',depth:0.80,xOff:0.38,phase:0.7},
+  {side:'L',depth:0.90,xOff:0.56,phase:1.8},
+  {side:'L',depth:0.97,xOff:0.25,phase:2.6},
+  // RIGHT — 10 palmeras distribuidas desde el horizonte hasta el borde inferior
+  {side:'R',depth:0.09,xOff:0.55,phase:0.4},
+  {side:'R',depth:0.20,xOff:0.72,phase:1.2},
+  {side:'R',depth:0.31,xOff:0.33,phase:2.0},
+  {side:'R',depth:0.42,xOff:0.62,phase:0.8},
+  {side:'R',depth:0.53,xOff:0.26,phase:1.6},
+  {side:'R',depth:0.64,xOff:0.55,phase:2.3},
+  {side:'R',depth:0.74,xOff:0.40,phase:0.2},
+  {side:'R',depth:0.84,xOff:0.68,phase:1.4},
+  {side:'R',depth:0.92,xOff:0.32,phase:2.2},
+  {side:'R',depth:0.99,xOff:0.58,phase:3.0},
+];
+
+/* ── Setup canvas dimensions to match game-world ── */
+function setupCanvas(){
+  const canvas=document.getElementById('game-canvas');
+  if(!canvas) return;
+  const gw=document.getElementById('game-world');
+  canvas.width  = gw.offsetWidth  || window.innerWidth;
+  canvas.height = gw.offsetHeight || (window.innerHeight - 78 - 28);
+}
+window.addEventListener('resize', setupCanvas);
+
+/* ── Road bounds at any screen Y (perspective projection) ── */
+function rBounds(screenY, W, H, HORIZON_Y){
+  const ROAD_W_BTM = W * 0.56;
+  const ROAD_W_TOP = W * 0.06;
+  const t = Math.max(0, Math.min(1, (screenY - HORIZON_Y) / (H - HORIZON_Y)));
+  const rw = ROAD_W_TOP + (ROAD_W_BTM - ROAD_W_TOP) * t;
+  const rl = (W - rw) / 2;
+  return {l:rl, r:rl+rw, w:rw, t};
+}
+
+/* ── Rounded rectangle helper (cross-browser) ── */
+function rrect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+/* ── Draw a single palm tree ── */
+function drawPalm(ctx,cx,bottomY,scale,wobble){
+  const tw=Math.max(2,8*scale);
+  const th=78*scale;
+  const wob=Math.sin(wobble)*5*scale;
+  const topX=cx+wob, topY=bottomY-th;
+
+  // Trunk
+  ctx.fillStyle='#4a2c0a';
+  ctx.beginPath();
+  ctx.moveTo(cx-tw/2,bottomY);
+  ctx.lineTo(cx+tw/2,bottomY);
+  ctx.lineTo(topX+tw/2,topY);
+  ctx.lineTo(topX-tw/2,topY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Leaves (5 fronds)
+  const ls=34*scale;
+  ctx.fillStyle='#1a5c1a';
+  for(let a=0;a<5;a++){
+    const angle=(a/5)*Math.PI*2 - Math.PI/2 + wobble*0.25;
+    const lx=topX+Math.cos(angle)*ls;
+    const ly=topY+Math.sin(angle)*ls*0.48;
+    ctx.beginPath();
+    ctx.ellipse((topX+lx)/2,(topY+ly)/2, ls*0.62,ls*0.16, angle,0,Math.PI*2);
+    ctx.fill();
+  }
+  ctx.fillStyle='#0d3314';
+  ctx.beginPath();
+  ctx.arc(topX,topY,ls*0.22,0,Math.PI*2);
+  ctx.fill();
+}
+
+/* ── Draw an obstacle on canvas ── */
+function drawObstacle(ctx,type,cx,cy,scale){
+  if(type==='cone'){
+    const hw=24*scale, h=52*scale, bh=10*scale;
+    const g=ctx.createLinearGradient(cx,cy-h-bh,cx,cy-bh);
+    g.addColorStop(0,'#FF6600'); g.addColorStop(0.5,'#FF3300'); g.addColorStop(1,'#CC2200');
+    ctx.fillStyle=g;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-h-bh);
+    ctx.lineTo(cx+hw,cy-bh);
+    ctx.lineTo(cx-hw,cy-bh);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(cx-hw*1.15,cy-bh,hw*2.3,bh);
+  } else if(type==='oil'){
+    const rx=40*scale, ry=19*scale;
+    const g=ctx.createRadialGradient(cx-rx*0.2,cy-ry*0.3,0,cx,cy,rx);
+    g.addColorStop(0,'rgba(140,0,255,0.75)');
+    g.addColorStop(0.45,'rgba(20,0,80,0.88)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+    ctx.fill();
+    // shimmer highlight
+    ctx.fillStyle='rgba(80,0,200,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(cx-rx*0.25,cy-ry*0.35,rx*0.35,ry*0.28,0,0,Math.PI*2);
+    ctx.fill();
+  } else { // rock
+    const rw=30*scale, rh=21*scale;
+    const g=ctx.createLinearGradient(cx-rw,cy-rh*2,cx+rw,cy);
+    g.addColorStop(0,'#6a6a6a'); g.addColorStop(0.42,'#484848'); g.addColorStop(1,'#2e2e2e');
+    ctx.fillStyle=g;
+    ctx.beginPath();
+    ctx.ellipse(cx,cy-rh*0.5,rw,rh,0,0,Math.PI*2);
+    ctx.fill();
+    // highlight
+    ctx.fillStyle='rgba(255,255,255,0.10)';
+    ctx.beginPath();
+    ctx.ellipse(cx-rw*0.2,cy-rh,rw*0.38,rh*0.32,-0.3,0,Math.PI*2);
+    ctx.fill();
+  }
+}
+
+/* ── Draw the player car — pixel art style (only fillRect, no curves) ── */
+function drawCar(ctx,cx,cy){
+  const CW=90, CH=110;
+  const x=Math.round(cx-CW/2), y=Math.round(cy-CH);
+
+  // 1. RUEDAS TRASERAS
+  ctx.fillStyle='#111111';
+  ctx.fillRect(x,              y+Math.round(CH*0.65), Math.round(CW*0.18), Math.round(CH*0.35));
+  ctx.fillRect(x+Math.round(CW*0.82), y+Math.round(CH*0.65), Math.round(CW*0.18), Math.round(CH*0.35));
+  // Aros
+  const wW=Math.round(CW*0.18), wH=Math.round(CH*0.35);
+  const rW=Math.round(wW*0.50), rH=Math.round(wH*0.45);
+  ctx.fillStyle='#888888';
+  ctx.fillRect(x+Math.round((wW-rW)/2),                    y+Math.round(CH*0.65)+Math.round((wH-rH)/2), rW, rH);
+  ctx.fillRect(x+Math.round(CW*0.82)+Math.round((wW-rW)/2), y+Math.round(CH*0.65)+Math.round((wH-rH)/2), rW, rH);
+
+  // 2. CARROCERÍA PRINCIPAL
+  ctx.fillStyle='#E8002D';
+  ctx.fillRect(x+Math.round(CW*0.08), y+Math.round(CH*0.45), Math.round(CW*0.84), Math.round(CH*0.55));
+
+  // 3. TECHO
+  ctx.fillStyle='#C0001F';
+  ctx.fillRect(x+Math.round(CW*0.22), y+Math.round(CH*0.10), Math.round(CW*0.56), Math.round(CH*0.38));
+
+  // 4. VENTANA TRASERA
+  ctx.fillStyle='#1a1a2e';
+  ctx.fillRect(x+Math.round(CW*0.28), y+Math.round(CH*0.14), Math.round(CW*0.44), Math.round(CH*0.25));
+
+  // 5. SPOILER
+  ctx.fillStyle='#FFD700';
+  ctx.fillRect(x+Math.round(CW*0.15), y+Math.round(CH*0.08), Math.round(CW*0.70), Math.round(CH*0.05));
+  // Soportes del spoiler
+  ctx.fillRect(x+Math.round(CW*0.21), y+Math.round(CH*0.08), Math.round(CW*0.04), Math.round(CH*0.06));
+  ctx.fillRect(x+Math.round(CW*0.75), y+Math.round(CH*0.08), Math.round(CW*0.04), Math.round(CH*0.06));
+
+  // 6. LUCES TRASERAS (animated flicker)
+  const tlOn=Math.floor((state.roadOffset||0)/5)%2===0;
+  ctx.fillStyle=tlOn?'#FF4400':'#CC2200';
+  if(tlOn){ctx.shadowColor='#FF4400';ctx.shadowBlur=10;}
+  ctx.fillRect(x+Math.round(CW*0.09), y+Math.round(CH*0.52), Math.round(CW*0.14), Math.round(CH*0.08));
+  ctx.fillRect(x+Math.round(CW*0.77), y+Math.round(CH*0.52), Math.round(CW*0.14), Math.round(CH*0.08));
+  ctx.shadowBlur=0;
+
+  // 7. DETALLE CENTRAL INFERIOR (escape/difusor)
+  ctx.fillStyle='#333333';
+  ctx.fillRect(x+Math.round(CW*0.38), y+Math.round(CH*0.88), Math.round(CW*0.24), Math.round(CH*0.12));
+
+  // 8. LÍNEAS DE DETALLE
+  ctx.fillStyle='#8B0000';
+  ctx.fillRect(x+Math.round(CW*0.08), y+Math.round(CH*0.48), Math.round(CW*0.84), 2);
+  ctx.fillRect(x+Math.round(CW*0.08), y+Math.round(CH*0.72), Math.round(CW*0.84), 2);
+}
+
+/* ── Main canvas render function (called every game frame) ── */
+function renderCanvas(){
+  const canvas=document.getElementById('game-canvas');
+  if(!canvas||!canvas.getContext) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  if(!W||!H) return;
+
+  const HORIZON_Y = H * 0.42;
+  const ROAD_W_BTM = W * 0.56;
+  const ro = state.roadOffset||0;
+  const N = 14; // stripe segment count
+  const animStep = 0;   // franjas estáticas
+  const eAnimStep = 0;  // bordes estáticos
+
+  /* ── 1. SKY gradient ── */
+  const skyG=ctx.createLinearGradient(0,0,0,HORIZON_Y);
+  skyG.addColorStop(0,'#070b34');
+  skyG.addColorStop(1,'#483475');
+  ctx.fillStyle=skyG;
+  ctx.fillRect(0,0,W,HORIZON_Y);
+
+  /* ── Stars ── */
+  ctx.fillStyle='#ffffff';
+  for(const s of STARS) ctx.fillRect(s.x*W, s.y*HORIZON_Y, s.r, s.r);
+
+  /* ── 2. GRASS stripes (full width, below horizon) ── */
+  for(let i=0;i<N;i++){
+    const y0=HORIZON_Y+(i/N)*(H-HORIZON_Y);
+    const y1=HORIZON_Y+((i+1)/N)*(H-HORIZON_Y);
+    ctx.fillStyle=(i+animStep)%2===0?'#1a5c1a':'#1f701f';
+    ctx.fillRect(0,y0,W,y1-y0+0.5);
+  }
+
+  /* ── 3. ROAD asphalt trapezoid stripes (Painter: back→front) ── */
+  for(let i=0;i<N;i++){
+    const t0=i/N, t1=(i+1)/N;
+    const y0=HORIZON_Y+t0*(H-HORIZON_Y);
+    const y1=HORIZON_Y+t1*(H-HORIZON_Y);
+    const b0=rBounds(y0,W,H,HORIZON_Y);
+    const b1=rBounds(y1,W,H,HORIZON_Y);
+    ctx.fillStyle=(i+animStep)%2===0?'#2a2a2a':'#333333';
+    ctx.beginPath();
+    ctx.moveTo(b0.l,y0); ctx.lineTo(b0.r,y0);
+    ctx.lineTo(b1.r,y1); ctx.lineTo(b1.l,y1);
+    ctx.closePath(); ctx.fill();
+  }
+
+  /* ── 4. ROAD EDGES — red/white alternating, static (Pole Position style) ── */
+  const ES=20;
+  for(let i=0;i<ES;i++){
+    const t0=i/ES, t1=(i+1)/ES;
+    const y0=HORIZON_Y+t0*(H-HORIZON_Y);
+    const y1=HORIZON_Y+t1*(H-HORIZON_Y);
+    const b0=rBounds(y0,W,H,HORIZON_Y);
+    const b1=rBounds(y1,W,H,HORIZON_Y);
+    const ew0=Math.max(2,20*t0), ew1=Math.max(2,20*t1);
+    ctx.fillStyle=i%2===0?'#CC0000':'#FFFFFF';
+    // Left edge
+    ctx.beginPath();
+    ctx.moveTo(b0.l,y0); ctx.lineTo(b0.l+ew0,y0);
+    ctx.lineTo(b1.l+ew1,y1); ctx.lineTo(b1.l,y1);
+    ctx.closePath(); ctx.fill();
+    // Right edge
+    ctx.beginPath();
+    ctx.moveTo(b0.r-ew0,y0); ctx.lineTo(b0.r,y0);
+    ctx.lineTo(b1.r,y1); ctx.lineTo(b1.r-ew1,y1);
+    ctx.closePath(); ctx.fill();
+  }
+
+  /* ── 5. LANE LINES — 2 dashed golden lines converging to VP ── */
+  const vp={x:W/2, y:HORIZON_Y};
+  const rl_bot=(W-ROAD_W_BTM)/2;
+  const l1Bot=rl_bot+ROAD_W_BTM*(1/3);
+  const l2Bot=rl_bot+ROAD_W_BTM*(2/3);
+  ctx.strokeStyle='#FFD700';
+  ctx.lineWidth=3;
+  ctx.setLineDash([38,38]);
+  ctx.lineDashOffset=-(ro*1.8)%76;
+  ctx.beginPath(); ctx.moveTo(vp.x,vp.y); ctx.lineTo(l1Bot,H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(vp.x,vp.y); ctx.lineTo(l2Bot,H); ctx.stroke();
+  ctx.setLineDash([]); ctx.lineWidth=1;
+
+  /* ── 6. HORIZON LINE ── */
+  ctx.fillStyle='#1a5c1a';
+  ctx.fillRect(0,HORIZON_Y-1,W,3);
+
+  /* ── 7. SCENERY — empty ── */
+
+  /* ── 8. OBSTACLES — scaled by depth ── */
+  const areaH=el.playArea.offsetHeight||H*0.58;
+  for(const obs of state.obstacles){
+    if(obs.removed||obs.hit) continue;
+    const prog=obs.y/areaH;
+    if(prog<0) continue;
+    const sy=HORIZON_Y+prog*(H-HORIZON_Y);
+    const b=rBounds(sy,W,H,HORIZON_Y);
+    // obs.x is % of play-area; play-area aligns with road at bottom
+    const sx=b.l+(obs.x/100)*b.w;
+    const sc=Math.max(0.05, 0.35+prog*0.85);
+    const alpha=Math.min(1,prog*3.5);
+    ctx.globalAlpha=alpha;
+    drawObstacle(ctx,obs.type,sx,sy,sc);
+    ctx.globalAlpha=1;
+  }
+
+  /* ── 9. PLAYER CAR ── */
+  const carRoadX=(W-ROAD_W_BTM)/2 + (state.playerX/100)*ROAD_W_BTM + (state.shakeX||0);
+  drawCar(ctx, carRoadX, H-10);
+}
+</script>
+</body>
+</html>
